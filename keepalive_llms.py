@@ -72,7 +72,8 @@ def ping_model(model_name: str, role: str):
         except Exception:
             reply = str(data)[:100]
 
-        logging.info(f"[{role}] ping success, reply: {reply.replace('\\n', ' ')[:80]}")
+        logging.info("[{}] ping success, reply: {}".format(role, reply.replace("\n", " ")[:80]))
+
         return True
 
     except Exception as e:
