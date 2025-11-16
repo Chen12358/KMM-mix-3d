@@ -29,7 +29,6 @@ logging.basicConfig(
 )
 
 # ========= 函数 =========
-
 def ping_model(model_name: str, role: str):
     """
     给指定 model 发一个很短的聊天请求，丢掉内容，只看是否成功。
@@ -43,7 +42,6 @@ def ping_model(model_name: str, role: str):
     if API_KEY is not None:
         headers["Authorization"] = f"Bearer {API_KEY}"
 
-    # 发一个非常简单的 prompt，max_tokens 设很小，避免浪费算力
     payload = {
         "model": model_name,
         "messages": [
@@ -65,20 +63,30 @@ def ping_model(model_name: str, role: str):
         resp.raise_for_status()
         data = resp.json()
 
-        # 简单抓一下返回内容前几十个字符，写到日志里
+        # 尽量从 OpenAI 风格的返回里取 content
         reply = ""
         try:
-            reply = data["choices"][0]["message"]["content"]
+            msg = data["choices"][0]["message"]
+            # 有些实现里 content 可能是 None，我们统一转成字符串
+            reply = msg.get("content", "")
         except Exception:
-            reply = str(data)[:100]
+            reply = str(data)
 
-        logging.info("[{}] ping success, reply: {}".format(role, reply.replace("\n", " ")[:80]))
-
+        # 一定先转成字符串再 replace，避免 NoneType 报错
+        reply_str = str(reply).replace("\n", " ")[:80]
+        logging.info("[{}] ping success, reply: {}".format(role, reply_str))
         return True
 
     except Exception as e:
-        logging.error(f"[{role}] ping FAILED: {e}")
+        # 打印一些原始响应，方便以后调试
+        raw = ""
+        try:
+            raw = resp.text[:200]
+        except Exception:
+            pass
+        logging.error(f"[{role}] ping FAILED: {e}. Raw response: {raw}")
         return False
+
 
 
 def main():
